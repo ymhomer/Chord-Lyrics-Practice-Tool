@@ -1,0 +1,2046 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Chord & Lyrics Practice Tool</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <style>
+    * { box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      padding: 8px;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f3f4f6;
+      color: #111827;
+      overflow: hidden; /* desktop: no full-page scroll */
+    }
+
+    h1 {
+      font-size: 20px;
+      margin: 0 0 12px;
+      text-align: center;
+    }
+
+    .app-shell {
+      max-width: 1100px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+      padding: 10px 10px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      position: relative;
+      height: 100%;
+      max-height: 100%;
+    }
+
+    .main-row {
+      flex: 1;
+      display: flex;
+      gap: 8px;
+      min-height: 0;
+      position: relative;
+    }
+
+    button,
+    label.btn-like {
+      border-radius: 999px;
+      border: none;
+      padding: 7px 14px;
+      font-size: 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #2563eb;
+      color: #ffffff;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.3);
+      transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
+      white-space: nowrap;
+      touch-action: manipulation;
+    }
+
+    button.secondary,
+    label.btn-like.secondary {
+      background: #e5e7eb;
+      color: #111827;
+      box-shadow: none;
+    }
+
+    button.small {
+      padding: 5px 10px;
+      font-size: 13px;
+    }
+
+    button:active,
+    label.btn-like:active {
+      transform: translateY(1px);
+      box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+    }
+
+    button:hover:not(:disabled),
+    label.btn-like:hover {
+      filter: brightness(1.05);
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    .chip {
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    /* LEFT: lyrics main area (full width) */
+    .lyrics-shell {
+      border-radius: 14px;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .lyrics-shell-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .lyrics-shell-header-left {
+      flex: 1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .lyrics-shell-header-right {
+      flex-shrink: 0;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .section-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      min-height: 22px;
+    }
+
+    .section-chip {
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      border: none;
+      background: #ecfdf3;
+      color: #15803d;
+      cursor: pointer;
+    }
+
+    .section-chip:hover { filter: brightness(1.05); }
+
+    .section-nav-empty {
+      font-size: 12px;
+      color: #9ca3af;
+    }
+
+    .hint-bar {
+      min-height: 18px;
+      font-size: 12px;
+      color: #6b7280;
+      margin-bottom: 4px;
+      padding: 0 4px;
+    }
+
+    .lyrics-view {
+      flex: 1;
+      max-height: 100%;
+      overflow-y: auto;
+      padding: 12px;
+      border-radius: 10px;
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      scroll-behavior: smooth;
+    }
+
+    .lyrics-view-inner {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .line-row {
+      display: flex;
+      flex-wrap: nowrap;
+      align-items: flex-end;
+      gap: 6px;
+      position: relative;
+    }
+
+    .inline-section-tag {
+      font-size: 11px;
+      color: #16a34a;
+      background: #ecfdf3;
+      border-radius: 999px;
+      padding: 2px 6px;
+      margin-right: 4px;
+      flex-shrink: 0;
+    }
+
+    .line-index {
+      font-size: 11px;
+      color: #9ca3af;
+      min-width: 18px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .line-slots {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      gap: 2px;
+      flex: 1;
+    }
+
+    .slot {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      margin-right: 4px;
+      min-width: 1.6em;
+    }
+
+    .slot-between {
+      min-width: 1em;
+      opacity: 0.7;
+    }
+
+    .chord-slot {
+      min-height: 1.5em;
+      font-size: 0.8em;
+      line-height: 1.1;
+      color: #1d4ed8;
+      padding: 0 3px;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.1s ease, box-shadow 0.1s ease;
+    }
+
+    .chord-slot::after {
+      content: "+";
+      font-size: 0.8em;
+      color: #d1d5db;
+      opacity: 0;
+    }
+
+    .chord-slot.empty::after { opacity: 1; }
+
+    .chord-slot:hover {
+      background: #e0ecff;
+      box-shadow: 0 0 0 1px #bfdbfe;
+    }
+
+    .chord-slot.empty:hover::after { color: #60a5fa; }
+
+    .chord-slot.active-chord {
+      background: #fee2e2 !important;
+      box-shadow: 0 0 0 1px #f97316;
+    }
+
+    .lyric-char {
+      margin-top: 2px;
+      font-size: 1em;
+      letter-spacing: 0.06em;
+      min-height: 1.6em;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #111827;
+    }
+
+    .lyric-char.space { opacity: 0.3; }
+
+    .empty-hint {
+      font-size: 13px;
+      color: #9ca3af;
+      text-align: center;
+      padding: 24px 8px;
+    }
+
+    .tagline {
+      font-size: 11px;
+      text-align: center;
+      color: #9ca3af;
+      margin-top: 2px;
+    }
+
+    /* Floating round buttons */
+    .floating-actions {
+      position: absolute;
+      top: 12px;
+      right: 14px;
+      display: flex;
+      gap: 8px;
+      z-index: 30;
+    }
+
+    .fab {
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      border: none;
+      background: #e5edff;
+      color: #1f2937;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: 0 4px 10px rgba(148, 163, 184, 0.7);
+      cursor: pointer;
+      transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.15s ease;
+    }
+
+    .fab:hover {
+      background: #dbeafe;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 14px rgba(148, 163, 184, 0.9);
+    }
+
+    .fab:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 6px rgba(148, 163, 184, 0.8);
+    }
+
+    .fab.active {
+      background: #2563eb;
+      color: #f9fafb;
+      box-shadow: 0 6px 16px rgba(37, 99, 235, 0.6);
+    }
+
+    .fab-help {
+      background: #fee2e2;
+      color: #7f1d1d;
+    }
+
+    .fab-help:hover {
+      background: #fecaca;
+    }
+
+    /* Panels that slide out from the right, overlaying lyrics (no resize) */
+    .activity-panel {
+      position: absolute;
+      top: 56px;
+      right: 10px;
+      width: 300px;
+      max-height: calc(100% - 96px);
+      background: #f9fafb;
+      border-radius: 12px;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.25);
+      border: 1px solid #e5e7eb;
+      padding: 10px;
+      z-index: 19;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .activity-panel.hidden {
+      display: none;
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #374151;
+    }
+
+    .card-title span.icon {
+      font-size: 18px;
+    }
+
+    .global-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 12px;
+      color: #4b5563;
+    }
+
+    .slider-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .slider-group input[type="range"] {
+      width: 150px;
+    }
+
+    .switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #4b5563;
+      cursor: pointer;
+    }
+
+    .switch input { display: none; }
+
+    .switch-pill {
+      width: 34px;
+      height: 18px;
+      background: #d1d5db;
+      border-radius: 999px;
+      position: relative;
+      transition: background 0.15s ease;
+    }
+
+    .switch-thumb {
+      width: 14px;
+      height: 14px;
+      background: #ffffff;
+      border-radius: 999px;
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      transition: transform 0.15s ease;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.25);
+    }
+
+    .switch input:checked + .switch-pill {
+      background: #2563eb;
+    }
+
+    .switch input:checked + .switch-pill .switch-thumb {
+      transform: translateX(16px);
+    }
+
+    .loops-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .loops-list {
+      flex: 1;
+      max-height: 180px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding-right: 2px;
+    }
+
+    .loop-item {
+      border-radius: 10px;
+      padding: 8px 10px;
+      background: #eef2ff;
+      color: #312e81;
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+
+    .loop-item:hover {
+      border-color: #6366f1;
+      background: #e0e7ff;
+    }
+
+    .loop-name-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .loop-name {
+      font-weight: 600;
+    }
+
+    .loop-line-hint {
+      font-size: 11px;
+      color: #4b5563;
+    }
+
+    .loop-time {
+      font-size: 11px;
+      color: #4338ca;
+    }
+
+    .loops-empty {
+      font-size: 12px;
+      color: #9ca3af;
+      padding: 4px 0;
+    }
+
+    .loop-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .loop-delete-btn {
+      border: none;
+      background: transparent;
+      color: #6b7280;
+      cursor: pointer;
+      padding: 0;
+      font-size: 13px;
+      line-height: 1;
+    }
+
+    .loop-delete-btn:hover {
+      color: #b91c1c;
+    }
+
+    /* Bottom Audio & AB strip (single horizontal row) */
+    .bottom-strip {
+      flex-shrink: 0;
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+      background: #f9fafb;
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 12px;
+      color: #4b5563;
+    }
+
+    .bottom-audio-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      flex: 2;
+    }
+
+    .bottom-audio-left audio {
+      flex: 1;
+      min-width: 160px;
+    }
+
+    .bottom-audio-mid {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      min-width: 0;
+      flex-wrap: wrap;
+    }
+
+    .bottom-audio-right {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1.1;
+      min-width: 0;
+    }
+
+    .bottom-speed-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .speed-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .speed-btn {
+      width: 38px;
+      height: 30px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      background: #e5e7eb;
+      color: #111827;
+      border: none;
+      box-shadow: none;
+    }
+
+    .speed-btn.active {
+      background: #2563eb;
+      color: #f9fafb;
+    }
+
+    .btn-toggle {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .btn-toggle.active {
+      background: #16a34a;
+      color: #f9fafb;
+    }
+
+    /* Modals */
+    .modal {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 40;
+    }
+
+    .modal.hidden { display: none; }
+
+    .modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+    }
+
+    .modal-dialog {
+      position: relative;
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 16px 16px 12px;
+      width: min(720px, 100% - 32px);
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.45);
+      z-index: 41;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .modal-header-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #111827;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .modal-body {
+      flex: 1;
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .modal-footer {
+      margin-top: 4px;
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 200px;
+      resize: vertical;
+      border-radius: 8px;
+      border: 1px solid #d1d5db;
+      padding: 8px;
+      font-family: inherit;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 1px #3b82f6;
+    }
+
+    .guide-list {
+      font-size: 13px;
+      color: #374151;
+      padding-left: 18px;
+    }
+
+    .guide-list li {
+      margin-bottom: 6px;
+    }
+
+    .guide-sub {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 2px;
+    }
+
+    .guide-step-label {
+      display: inline-block;
+      min-width: 95px;
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .guide-key {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px 6px;
+      border-radius: 6px;
+      border: 1px solid #d1d5db;
+      font-size: 11px;
+      background: #f9fafb;
+      margin: 0 2px;
+    }
+
+    .guide-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      background: #eef2ff;
+      color: #3730a3;
+      margin: 0 2px;
+    }
+
+    .guide-hint {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-top: 2px;
+    }
+
+    /* Chord editor floating panel */
+    .chord-editor {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      width: 260px;
+      background: #111827;
+      color: #e5e7eb;
+      border-radius: 12px;
+      padding: 10px;
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.6);
+      z-index: 35;
+      font-size: 12px;
+    }
+
+    .chord-editor.hidden { display: none; }
+
+    .chord-editor-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .chord-editor-header span {
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .chord-editor-body {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .chord-editor-body input[type="text"] {
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid #4b5563;
+      padding: 4px 6px;
+      font-size: 12px;
+      background: #111827;
+      color: #f9fafb;
+    }
+
+    .chord-quick-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .chord-quick-row button {
+      background: #1f2937;
+      color: #e5e7eb;
+      box-shadow: none;
+      padding: 3px 8px;
+      font-size: 11px;
+    }
+
+    .chord-editor-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 6px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      body {
+        padding: 8px;
+        overflow: auto;
+      }
+
+      .app-shell {
+        padding: 10px;
+        height: auto;
+        max-height: none;
+      }
+
+      .floating-actions {
+        top: auto;
+        bottom: 90px;
+        right: 12px;
+      }
+
+      .activity-panel {
+        right: 10px;
+        top: auto;
+        bottom: 90px;
+        max-height: 260px;
+      }
+
+      .bottom-strip {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .bottom-audio-left {
+        width: 100%;
+      }
+
+      .bottom-audio-left audio {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <h1>Chord &amp; Lyrics Practice Tool</h1>
+
+    <!-- Floating round buttons -->
+    <div class="floating-actions">
+      <button class="fab" data-panel="viewPanel" title="View & scroll">🔍</button>
+      <button class="fab" data-panel="loopsPanel" title="AB loop playlist">📂</button>
+      <button class="fab fab-help" type="button" title="Help / guide">❔</button>
+    </div>
+
+    <div class="main-row">
+      <!-- Lyrics main view -->
+      <div class="lyrics-shell">
+        <div class="lyrics-shell-header">
+          <div class="lyrics-shell-header-left">
+            <div id="sectionNav" class="section-nav"></div>
+          </div>
+          <div class="lyrics-shell-header-right">
+            <button id="openLyricsModalBtn" class="small secondary">📝 Edit lyrics</button>
+            <span id="lineCountInfo" class="chip">Lines: 0</span>
+          </div>
+        </div>
+        <div id="hintBar" class="hint-bar"></div>
+        <div id="lyricsView" class="lyrics-view">
+          <div id="lyricsInner" class="lyrics-view-inner">
+            <div class="empty-hint">
+              No lyrics yet. Click “Edit lyrics” in the top-right, paste your lyrics, then press “Build layout”.<br>
+              Click any “+” above or between characters to place chords.<br>
+              Use [Verse 1], [Chorus] as section tags, and ( ... ) for internal hints.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- View & scroll panel -->
+      <div id="viewPanel" class="activity-panel hidden">
+        <div class="card-title">
+          <span class="icon">🔍</span>
+          View &amp; scroll
+        </div>
+        <div class="global-controls">
+          <div class="slider-group">
+            <span>Font size</span>
+            <input type="range" id="fontSizeRange" min="16" max="40" value="24">
+            <span id="fontSizeLabel">24px</span>
+          </div>
+          <div class="slider-group">
+            <label class="switch">
+              <input type="checkbox" id="autoScrollToggle">
+              <span class="switch-pill">
+                <span class="switch-thumb"></span>
+              </span>
+              <span>Auto scroll</span>
+            </label>
+            <span>Speed</span>
+            <input type="range" id="scrollSpeedRange" min="0" max="10" value="4">
+            <span id="scrollSpeedLabel">4</span>
+          </div>
+          <div class="slider-group">
+            <button id="exportBtn" class="secondary small">📤 Export session</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- AB loop playlist panel -->
+      <div id="loopsPanel" class="activity-panel hidden">
+        <div class="card-title">
+          <span class="icon">📂</span>
+          AB loop playlist
+        </div>
+        <div class="loops-header">
+          <button id="saveLoopBtn" class="small secondary">＋ Save current AB + view</button>
+          <button id="clearLoopsBtn" class="small secondary">🗑 Clear all</button>
+        </div>
+        <div id="loopsContainer" class="loops-list">
+          <div class="loops-empty">No AB loops saved yet.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Audio & AB strip (single row) -->
+    <div class="bottom-strip">
+      <div class="bottom-audio-left">
+        <label class="btn-like secondary">
+          <span>🎧 Load audio file</span>
+          <input type="file" id="audioFile" accept="audio/*">
+        </label>
+        <audio id="audioPlayer" controls preload="metadata"></audio>
+      </div>
+      <div class="bottom-audio-mid">
+        <button id="setABtn" class="small secondary">Set A</button>
+        <button id="setBBtn" class="small secondary">Set B</button>
+        <button id="loopBtn" class="small btn-toggle">AB Loop: OFF</button>
+        <span class="chip" id="abStatus">A: --:--  |  B: --:--</span>
+      </div>
+      <div class="bottom-audio-right">
+        <div class="bottom-speed-row">
+          <span>Playback speed</span>
+          <div class="speed-buttons" id="speedButtons">
+            <button type="button" class="speed-btn" data-rate="0.25">0.25x</button>
+            <button type="button" class="speed-btn" data-rate="0.5">0.5x</button>
+            <button type="button" class="speed-btn" data-rate="0.75">0.75x</button>
+            <button type="button" class="speed-btn active" data-rate="1">1x</button>
+            <button type="button" class="speed-btn" data-rate="2">2x</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tagline">
+      Tap any “+” above the lyrics to add chords. Use the panel at bottom-right to edit or clear them.
+    </div>
+  </div>
+
+  <!-- Lyrics editor modal -->
+  <div id="lyricsModal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-header-title">
+          <span>📝 Edit lyrics &amp; session</span>
+        </div>
+        <button id="closeLyricsModalBtn" class="small secondary">Close</button>
+      </div>
+      <div class="modal-body">
+        <textarea id="lyricsInput" placeholder="Paste or type your lyrics here, one line per row.&#10;Use [Verse 1], [Chorus]... as section markers, and ( ... ) for hints that will show in the top hint bar."></textarea>
+        <div class="slider-group" style="justify-content: space-between; gap: 6px;">
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <label class="btn-like secondary">
+              <span>📄 Load TXT file</span>
+              <input type="file" id="lyricsFile" accept=".txt,text/plain">
+            </label>
+            <button id="sampleBtn" class="secondary small">Insert sample lyrics</button>
+            <button id="importSessionBtn" class="secondary small">📥 Import JSON session</button>
+            <input type="file" id="sessionFile" accept="application/json">
+          </div>
+          <button id="buildBtn">
+            <span>Build chord layout</span>
+          </button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        Lines with [Verse 1], [Chorus]... will appear in the section bar; hints in ( ... ) will show in the top hint bar as the lyrics scroll.<br>
+        To restore a saved practice, use <strong>📥 Import JSON session</strong> and select a file exported via <strong>📤 Export session</strong>.
+      </div>
+    </div>
+  </div>
+
+  <!-- Guide modal -->
+  <div id="guideModal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-header-title">
+          <span>❔ Practice page guide</span>
+        </div>
+        <button id="closeGuideModalBtn" class="small secondary">Close</button>
+      </div>
+      <div class="modal-body">
+        <ul class="guide-list">
+		  <li>
+			<strong>0. Layout overview</strong>
+			<div class="guide-sub">
+			  <span class="guide-key">📝 Edit lyrics</span> — Button in the top-right of the main white panel. Opens the lyrics &amp; session editor.<br>
+			  <span class="guide-key">🔍</span> — Floating button in the top-right corner. Toggles the <span class="guide-pill">View &amp; scroll</span> panel (font size, auto scroll, export).<br>
+			  <span class="guide-key">📂</span> — Floating button in the top-right corner. Toggles the <span class="guide-pill">AB loop playlist</span> panel.<br>
+			  <span class="guide-key">❔</span> — Floating button in the top-right corner. Opens this help at any time.<br>
+			  Bottom strip = <span class="guide-pill">Audio player</span> + <span class="guide-pill">AB controls</span> + <span class="guide-pill">Playback speed</span>.
+			</div>
+		  </li>
+
+		  <li>
+			<strong>1. Starting a new song</strong>
+			<div class="guide-sub">
+			  <span class="guide-step-label">Step 1.1</span>
+			  Click <span class="guide-key">📝 Edit lyrics</span> to open the editor.<br>
+			  <span class="guide-step-label">Step 1.2</span>
+			  Choose one of the following:<br>
+			  &nbsp;&nbsp;• Paste your lyrics directly into the large text box, one line per row.<br>
+			  &nbsp;&nbsp;• Use <span class="guide-key">📄 Load TXT file</span> to load a plain text file.<br>
+			  &nbsp;&nbsp;• Click <span class="guide-key">Insert sample lyrics</span> to see a sample format.<br>
+			  <span class="guide-step-label">Step 1.3</span>
+			  Mark sections using square brackets, e.g. <code>[Intro]</code>, <code>[Verse 1]</code>, <code>[Chorus]</code>. These labels will appear in the section bar above the lyrics.<br>
+			  <span class="guide-step-label">Step 1.4</span>
+			  Put internal hints inside parentheses, e.g. <code>(play softer)</code> or <code>(mute strum)</code>. These will not appear in the lyrics line, but will show in the top <span class="guide-pill">Hint bar</span> while you scroll.<br>
+			  <span class="guide-step-label">Step 1.5</span>
+			  Click <span class="guide-key">Build chord layout</span>. The tool will split each line into “characters plus chord slots above them”.
+			</div>
+		  </li>
+
+		  <li>
+			<strong>2. Restoring a saved practice (Import JSON session)</strong>
+			<div class="guide-sub">
+			  If you previously exported a JSON with <span class="guide-key">🔍 → 📤 Export session</span>:<br>
+			  <span class="guide-step-label">Step 2.1</span>
+			  Click <span class="guide-key">📝 Edit lyrics</span> to open the editor.<br>
+			  <span class="guide-step-label">Step 2.2</span>
+			  Click <span class="guide-key">📥 Import JSON session</span> and choose your exported JSON file.<br>
+			  <span class="guide-step-label">Step 2.3</span>
+			  After import, the tool will restore:<br>
+			  • Original lyrics text<br>
+			  • All chord positions and values<br>
+			  • The full <span class="guide-pill">AB loop playlist</span><br>
+			  • Font size / auto scroll settings<br>
+			  • Current A/B points and loop state (if they were saved)<br>
+			  After that, simply load your audio file again and continue from where you left off.
+			</div>
+		  </li>
+
+		  <li>
+			<strong>3. Placing chords on the lyrics</strong>
+			<div class="guide-sub">
+			  <span class="guide-step-label">Step 3.1</span>
+			  In the main view, every character and every gap between characters has a small “<strong>+</strong>” chord slot above it.<br>
+			  <span class="guide-step-label">Step 3.2</span>
+			  Click any “+”. A <span class="guide-pill">Chord editor</span> panel will appear in the bottom-right corner.<br>
+			  <span class="guide-step-label">Step 3.3</span>
+			  Type the chord in the input box, e.g. <code>C</code>, <code>Am7</code>, <code>C/G</code>, and press <span class="guide-key">Apply</span>.<br>
+			  You can also click the quick chord buttons (C / G / Am / F / D / Em / Bm).<br>
+			  <span class="guide-step-label">Step 3.4</span>
+			  To clear a chord, click the same slot again and press <span class="guide-key">Clear</span>.<br>
+			  <span class="guide-hint">Tip: The “🔍 → Font size” slider will scale both lyrics and chords so the layout stays readable.</span>
+			</div>
+		  </li>
+
+		  <li>
+			<strong>4. Audio &amp; AB Loop controls</strong>
+			<div class="guide-sub">
+			  <span class="guide-step-label">Step 4.1</span>
+			  At the bottom strip, click <span class="guide-key">🎧 Load audio file</span> and select a local audio file (e.g. MP3). The built-in browser player will be used.<br>
+			  <span class="guide-step-label">Step 4.2</span>
+			  Play the song. When you reach the desired loop start, click <span class="guide-key">Set A</span>.<br>
+			  <span class="guide-step-label">Step 4.3</span>
+			  When you reach the desired loop end, click <span class="guide-key">Set B</span>.<br>
+			  <span class="guide-step-label">Step 4.4</span>
+			  Toggle <span class="guide-key">AB Loop</span> to ON. The player will loop between A and B. The current A/B times are displayed in <span class="guide-pill">A: xx:xx | B: xx:xx</span> on the right.<br>
+			  <span class="guide-step-label">Step 4.5</span>
+			  In the <span class="guide-pill">Playback speed</span> area, click 0.25x / 0.5x / 0.75x / 1x / 2x to adjust the playback rate and match your practice pace.
+			</div>
+		  </li>
+
+		  <li>
+			<strong>5. AB loop playlist &amp; View / scroll</strong>
+			<div class="guide-sub">
+			  <span class="guide-step-label">Step 5.1</span>
+			  Scroll the lyrics to the position you want, set A/B, and confirm the loop works.<br>
+			  <span class="guide-step-label">Step 5.2</span>
+			  Click the floating <span class="guide-key">📂</span> button to open the <span class="guide-pill">AB loop playlist</span> panel.<br>
+			  <span class="guide-step-label">Step 5.3</span>
+			  Press <span class="guide-key">＋ Save current AB + view</span>. The current A/B times and the current lyrics scroll position are stored as one loop item.<br>
+			  The item shows: a name (based on the nearest section label), line number, and the A–B time range.<br>
+			  <span class="guide-step-label">Step 5.4</span>
+			  Later, clicking that loop item will:<br>
+			  • Set the audio player to that A/B range and enable AB Loop<br>
+			  • Restore the lyrics scroll position used when it was saved<br>
+			  <span class="guide-step-label">Step 5.5</span>
+			  To remove a single loop, click the <span class="guide-key">✕</span> on the right. To clear all loops, use <span class="guide-key">🗑 Clear all</span> at the top of the panel.<br><br>
+
+			  <span class="guide-step-label">View &amp; scroll panel</span><br>
+			  <span class="guide-step-label">Step 5.6</span>
+			  Click the floating <span class="guide-key">🔍</span> button to open <span class="guide-pill">View &amp; scroll</span>:<br>
+			  • <strong>Font size</strong> slider: scales both lyrics and chords.<br>
+			  • <strong>Auto scroll</strong> switch: automatically scrolls the lyrics upward.<br>
+			  • <strong>Speed</strong> slider: controls how fast the auto-scroll moves.<br>
+			  This is useful when you want to play hands-free and just follow the screen.
+			</div>
+		  </li>
+
+		  <li>
+			<strong>6. Saving &amp; moving your practice (Export / Import JSON)</strong>
+			<div class="guide-sub">
+			  <span class="guide-step-label">Step 6.1</span>
+			  After you set up chords, AB loops, and view preferences, click <span class="guide-key">🔍 → 📤 Export session</span>.<br>
+			  The tool will download a <code>.json</code> file containing:<br>
+			  • Raw lyrics text<br>
+			  • All chords and their positions<br>
+			  • All AB loop items (A/B times + scrollTop)<br>
+			  • Font size / auto scroll / scroll speed<br>
+			  • Current A/B state and loop flag<br><br>
+			  <span class="guide-step-label">Step 6.2</span>
+			  To continue the same practice on another device or later:<br>
+			  1) Open this page<br>
+			  2) Click <span class="guide-key">📝 Edit lyrics</span><br>
+			  3) Click <span class="guide-key">📥 Import JSON session</span> and select the exported file<br>
+			  4) Wait for the session to load. Lyrics, chords, AB loop playlist and view settings will be restored.<br>
+			  Finally, load the audio file again and you can resume your practice exactly where you stopped.
+			</div>
+		  </li>
+		</ul>
+      </div>
+	  <div class="modal-footer">
+	    Whenever you get lost, tap the floating <span class="guide-key">❔</span> button at the top-right — this guide will open on top of everything.
+	  </div>
+    </div>
+  </div>
+
+  <!-- Chord editor floating panel -->
+  <div id="chordEditor" class="chord-editor hidden">
+    <div class="chord-editor-header">
+      <span>Edit chord</span>
+      <button id="chordEditorClose" class="small secondary">×</button>
+    </div>
+    <div class="chord-editor-body">
+      <input id="chordInput" type="text" placeholder="e.g. C, Am7, F/G">
+      <div class="chord-quick-row">
+        <button type="button" class="chord-quick small">C</button>
+        <button type="button" class="chord-quick small">G</button>
+        <button type="button" class="chord-quick small">Am</button>
+        <button type="button" class="chord-quick small">F</button>
+        <button type="button" class="chord-quick small">D</button>
+        <button type="button" class="chord-quick small">Em</button>
+        <button type="button" class="chord-quick small">Bm</button>
+      </div>
+      <div class="chord-editor-actions">
+        <button id="chordApplyBtn" class="small">Apply</button>
+        <button id="chordClearBtn" class="small secondary">Clear</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ===== DOM refs: lyrics / sections =====
+    const lyricsInput = document.getElementById('lyricsInput');
+    const lyricsFile = document.getElementById('lyricsFile');
+    const sampleBtn = document.getElementById('sampleBtn');
+    const buildBtn = document.getElementById('buildBtn');
+    const lyricsView = document.getElementById('lyricsView');
+    const lyricsInner = document.getElementById('lyricsInner');
+    const lineCountInfo = document.getElementById('lineCountInfo');
+    const sectionNav = document.getElementById('sectionNav');
+    const hintBar = document.getElementById('hintBar');
+
+    const lyricsModal = document.getElementById('lyricsModal');
+    const openLyricsModalBtn = document.getElementById('openLyricsModalBtn');
+    const closeLyricsModalBtn = document.getElementById('closeLyricsModalBtn');
+    const lyricsModalBackdrop = lyricsModal.querySelector('.modal-backdrop');
+
+    // JSON session import
+    const importSessionBtn = document.getElementById('importSessionBtn');
+    const sessionFileInput = document.getElementById('sessionFile');
+
+    // Guide modal
+    const guideModal = document.getElementById('guideModal');
+    const closeGuideModalBtn = document.getElementById('closeGuideModalBtn');
+    const guideBackdrop = guideModal.querySelector('.modal-backdrop');
+    const helpFab = document.querySelector('.fab-help');
+
+    // Font & auto scroll
+    const fontSizeRange = document.getElementById('fontSizeRange');
+    const fontSizeLabel = document.getElementById('fontSizeLabel');
+    const autoScrollToggle = document.getElementById('autoScrollToggle');
+    const scrollSpeedRange = document.getElementById('scrollSpeedRange');
+    const scrollSpeedLabel = document.getElementById('scrollSpeedLabel');
+    let autoScrollTimer = null;
+
+    // Audio / AB / loops
+    const audioFileInput = document.getElementById('audioFile');
+    const audioPlayer = document.getElementById('audioPlayer');
+    const setABtn = document.getElementById('setABtn');
+    const setBBtn = document.getElementById('setBBtn');
+    const loopBtn = document.getElementById('loopBtn');
+    const abStatus = document.getElementById('abStatus');
+    const saveLoopBtn = document.getElementById('saveLoopBtn');
+    const clearLoopsBtn = document.getElementById('clearLoopsBtn');
+    const loopsContainer = document.getElementById('loopsContainer');
+    const speedButtonsWrapper = document.getElementById('speedButtons');
+    const speedButtons = speedButtonsWrapper.querySelectorAll('.speed-btn');
+
+    let pointA = null;
+    let pointB = null;
+    let abLooping = false;
+    let savedLoops = []; // { id, a, b, scrollTop, label, lineIndex }
+
+    // Chord editor
+    const chordEditor = document.getElementById('chordEditor');
+    const chordEditorClose = document.getElementById('chordEditorClose');
+    const chordInput = document.getElementById('chordInput');
+    const chordApplyBtn = document.getElementById('chordApplyBtn');
+    const chordClearBtn = document.getElementById('chordClearBtn');
+    const chordQuickButtons = chordEditor.querySelectorAll('.chord-quick');
+    let activeChordEl = null;
+
+    // Export
+    const exportBtn = document.getElementById('exportBtn');
+
+    // Floating action panels
+    const viewPanel = document.getElementById('viewPanel');
+    const loopsPanel = document.getElementById('loopsPanel');
+    const activityPanels = { viewPanel, loopsPanel };
+    const activityButtons = document.querySelectorAll('.fab[data-panel]');
+    let activePanelId = null;
+
+    // ===== Floating buttons: panel toggle & help =====
+    activityButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetId = btn.dataset.panel;
+        if (!targetId) return;
+
+        if (activePanelId === targetId) {
+          activePanelId = null;
+          Object.values(activityPanels).forEach(p => p.classList.add('hidden'));
+          activityButtons.forEach(b => b.classList.remove('active'));
+        } else {
+          activePanelId = targetId;
+          Object.entries(activityPanels).forEach(([id, panel]) => {
+            if (id === targetId) {
+              panel.classList.remove('hidden');
+            } else {
+              panel.classList.add('hidden');
+            }
+          });
+          activityButtons.forEach(b => {
+            b.classList.toggle('active', b.dataset.panel === targetId);
+          });
+        }
+      });
+    });
+
+    helpFab.addEventListener('click', () => {
+      guideModal.classList.remove('hidden');
+    });
+
+    // ===== Lyrics modal =====
+    openLyricsModalBtn.addEventListener('click', () => {
+      lyricsModal.classList.remove('hidden');
+      lyricsInput.focus();
+    });
+    function closeLyricsModal() {
+      lyricsModal.classList.add('hidden');
+    }
+    closeLyricsModalBtn.addEventListener('click', closeLyricsModal);
+    lyricsModalBackdrop.addEventListener('click', closeLyricsModal);
+
+    // ===== Guide modal =====
+    function closeGuideModal() {
+      guideModal.classList.add('hidden');
+    }
+    closeGuideModalBtn.addEventListener('click', closeGuideModal);
+    guideBackdrop.addEventListener('click', closeGuideModal);
+
+    // ===== Load TXT lyrics =====
+    lyricsFile.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        let text = reader.result || '';
+        text = text.replace(/\r\n/g, '\n');
+        lyricsInput.value = text;
+      };
+      reader.readAsText(file, 'utf-8');
+    });
+
+    // Sample lyrics
+    sampleBtn.addEventListener('click', () => {
+      const demo = [
+        "[Intro]",
+        "Instrumental only    (4 bars intro)",
+        "",
+        "[Verse 1]",
+        "In the quiet of the night    I am holding this guitar (play softer)",
+        "Searching for a little groove    to carry me till dawn",
+        "",
+        "[Chorus]",
+        "Even if I miss a chord    I will keep on singing",
+        "Following the steady beat    till the song is done"
+      ].join('\n');
+      lyricsInput.value = demo;
+    });
+
+    // Build chord layout
+    buildBtn.addEventListener('click', () => {
+      const raw = lyricsInput.value || '';
+      const lines = raw.split(/\n/);
+      renderLines(lines);
+      lineCountInfo.textContent = "Lines: " + lines.length;
+      closeLyricsModal();
+    });
+
+    function renderLines(lines) {
+      lyricsInner.innerHTML = '';
+      const sections = [];
+
+      if (!lines.length || (lines.length === 1 && lines[0].trim() === '')) {
+        const div = document.createElement('div');
+        div.className = 'empty-hint';
+        div.textContent = 'No lyrics found. Please enter or load lyrics first, then build the layout.';
+        lyricsInner.appendChild(div);
+        renderSectionNav(sections);
+        hintBar.textContent = '';
+        return;
+      }
+
+      lines.forEach((lineText, lineIndex) => {
+        const original = lineText || '';
+        let sectionLabel = null;
+        const bracketMatch = original.match(/\[([^\]]+)\]/);
+        if (bracketMatch) {
+          sectionLabel = bracketMatch[1].trim();
+        }
+
+        let hintText = null;
+        const parMatches = [...original.matchAll(/\(([^)]*)\)/g)];
+        if (parMatches.length) {
+          hintText = parMatches
+            .map(m => (m[1] || '').trim())
+            .filter(Boolean)
+            .join(' / ');
+        }
+
+        // Remove [ ] and ( ) before layout
+        let displayLine = original;
+        displayLine = displayLine.replace(/\[[^\]]+\]/g, '');
+        displayLine = displayLine.replace(/\([^)]*\)/g, '');
+
+        const row = document.createElement('div');
+        row.className = 'line-row';
+        row.dataset.lineIndex = String(lineIndex);
+
+        if (sectionLabel) {
+          row.dataset.section = sectionLabel;
+          sections.push({ label: sectionLabel, lineIndex, row });
+        }
+        if (hintText) {
+          row.dataset.hint = hintText;
+        }
+
+        const indexEl = document.createElement('div');
+        indexEl.className = 'line-index';
+        indexEl.textContent = lineIndex + 1;
+
+        if (sectionLabel) {
+          const tag = document.createElement('div');
+          tag.className = 'inline-section-tag';
+          tag.textContent = sectionLabel;
+          row.appendChild(tag);
+        }
+
+        row.appendChild(indexEl);
+
+        const slots = document.createElement('div');
+        slots.className = 'line-slots';
+
+        let chars = Array.from(displayLine);
+        if (chars.length === 0) {
+          chars = [' '];
+        }
+
+        // Leading between slot
+        slots.appendChild(createSlot(lineIndex, -1, 'between'));
+
+        chars.forEach((ch, charIndex) => {
+          slots.appendChild(createSlot(lineIndex, charIndex, 'char', ch));
+          slots.appendChild(createSlot(lineIndex, charIndex, 'between'));
+        });
+
+        row.appendChild(slots);
+        lyricsInner.appendChild(row);
+      });
+
+      renderSectionNav(sections);
+      applyFontSize();
+      updateHintForScroll();
+    }
+
+    // Section navigation
+    function renderSectionNav(sections) {
+      sectionNav.innerHTML = '';
+      if (!sections.length) {
+        const span = document.createElement('span');
+        span.className = 'section-nav-empty';
+        span.textContent = 'No sections yet (tag them with [Verse 1], [Chorus] ...).';
+        sectionNav.appendChild(span);
+        return;
+      }
+      sections.forEach((sec) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'section-chip';
+        btn.textContent = sec.label;
+        btn.addEventListener('click', () => {
+          const row = sec.row;
+          if (!row) return;
+
+          const fontSize = parseInt(fontSizeRange.value, 10) || 24;
+          const offset = fontSize * 2.0;
+
+          let target = row.offsetTop - offset;
+          if (target < 0) target = 0;
+
+          lyricsView.scrollTop = target;
+          updateHintForScroll();
+        });
+        sectionNav.appendChild(btn);
+      });
+    }
+
+    function createSlot(lineIndex, charIndex, kind, ch) {
+      const slot = document.createElement('div');
+      slot.className = 'slot ' + (kind === 'between' ? 'slot-between' : 'slot-char');
+      slot.dataset.line = String(lineIndex);
+      slot.dataset.char = String(charIndex);
+      slot.dataset.kind = kind;
+
+      const chord = document.createElement('div');
+      chord.className = 'chord-slot empty';
+      chord.dataset.line = String(lineIndex);
+      chord.dataset.char = String(charIndex);
+      chord.dataset.kind = kind;
+      chord.addEventListener('click', onChordClick);
+      slot.appendChild(chord);
+
+      const lyricChar = document.createElement('div');
+      lyricChar.className = 'lyric-char';
+      if (ch === ' ') {
+        lyricChar.classList.add('space');
+        lyricChar.textContent = '·';
+      } else if (ch == null) {
+        lyricChar.textContent = '';
+        lyricChar.style.minHeight = '1.2em';
+      } else {
+        lyricChar.textContent = ch;
+      }
+      slot.appendChild(lyricChar);
+
+      return slot;
+    }
+
+    // ===== Chord editor logic =====
+    function onChordClick(e) {
+      const el = e.currentTarget;
+      openChordEditor(el);
+    }
+
+    function openChordEditor(el) {
+      if (activeChordEl) {
+        activeChordEl.classList.remove('active-chord');
+      }
+      activeChordEl = el;
+      activeChordEl.classList.add('active-chord');
+      chordInput.value = activeChordEl.textContent.trim();
+      chordEditor.classList.remove('hidden');
+      setTimeout(() => {
+        chordInput.focus();
+        chordInput.select();
+      }, 0);
+    }
+
+    function closeChordEditor() {
+      if (activeChordEl) {
+        activeChordEl.classList.remove('active-chord');
+      }
+      activeChordEl = null;
+      chordEditor.classList.add('hidden');
+    }
+
+    function applyChordFromEditor() {
+      if (!activeChordEl) return;
+      const value = chordInput.value.trim();
+      if (value === '') {
+        activeChordEl.textContent = '';
+        activeChordEl.classList.add('empty');
+      } else {
+        activeChordEl.textContent = value;
+        activeChordEl.classList.remove('empty');
+      }
+    }
+
+    chordApplyBtn.addEventListener('click', () => {
+      applyChordFromEditor();
+    });
+
+    chordClearBtn.addEventListener('click', () => {
+      if (!activeChordEl) return;
+      chordInput.value = '';
+      activeChordEl.textContent = '';
+      activeChordEl.classList.add('empty');
+    });
+
+    chordEditorClose.addEventListener('click', closeChordEditor);
+
+    chordInput.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter') {
+        ev.preventDefault();
+        applyChordFromEditor();
+      } else if (ev.key === 'Escape') {
+        ev.preventDefault();
+        closeChordEditor();
+      }
+    });
+
+    chordQuickButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        chordInput.value = btn.textContent.trim();
+        chordInput.focus();
+        chordInput.select();
+      });
+    });
+
+    // ===== Font / auto scroll =====
+    fontSizeRange.addEventListener('input', () => {
+      fontSizeLabel.textContent = fontSizeRange.value + 'px';
+      applyFontSize();
+    });
+
+    function applyFontSize() {
+      const size = parseInt(fontSizeRange.value, 10) || 24;
+      lyricsInner.querySelectorAll('.lyric-char').forEach(el => {
+        el.style.fontSize = size + 'px';
+      });
+      lyricsInner.querySelectorAll('.chord-slot').forEach(el => {
+        el.style.fontSize = (size * 0.6) + 'px';
+      });
+      lyricsInner.style.lineHeight = (size * 1.4) + 'px';
+    }
+
+    scrollSpeedRange.addEventListener('input', () => {
+      scrollSpeedLabel.textContent = scrollSpeedRange.value;
+      if (autoScrollToggle.checked) {
+        startAutoScroll();
+      }
+    });
+
+    autoScrollToggle.addEventListener('change', () => {
+      if (autoScrollToggle.checked) {
+        startAutoScroll();
+      } else {
+        stopAutoScroll();
+      }
+    });
+
+    function startAutoScroll() {
+      stopAutoScroll();
+      const speed = parseInt(scrollSpeedRange.value, 10) || 0;
+      if (speed <= 0) return;
+      autoScrollTimer = setInterval(() => {
+        const maxScroll = lyricsView.scrollHeight - lyricsView.clientHeight;
+        if (lyricsView.scrollTop >= maxScroll) return;
+        lyricsView.scrollTop += speed * 0.5;
+        updateHintForScroll();
+      }, 50);
+    }
+
+    function stopAutoScroll() {
+      if (autoScrollTimer) {
+        clearInterval(autoScrollTimer);
+        autoScrollTimer = null;
+      }
+    }
+
+    window.addEventListener('beforeunload', stopAutoScroll);
+
+    // Hint bar update
+    function updateHintForScroll() {
+      const rows = Array.from(lyricsInner.querySelectorAll('.line-row'));
+      if (!rows.length) {
+        hintBar.textContent = '';
+        return;
+      }
+      const center = lyricsView.scrollTop + lyricsView.clientHeight / 2;
+      let bestRow = null;
+      let bestDist = Infinity;
+      rows.forEach(row => {
+        const rowCenter = row.offsetTop + row.clientHeight / 2;
+        const dist = Math.abs(rowCenter - center);
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestRow = row;
+        }
+      });
+      if (!bestRow) {
+        hintBar.textContent = '';
+        return;
+      }
+      const hint = bestRow.dataset.hint || '';
+      if (hint) {
+        hintBar.textContent = 'Hint: ' + hint;
+      } else {
+        hintBar.textContent = '';
+      }
+    }
+
+    lyricsView.addEventListener('scroll', () => {
+      updateHintForScroll();
+    });
+
+    // For AB loop naming: infer section & line around center
+    function inferLoopMeta() {
+      const rows = Array.from(lyricsInner.querySelectorAll('.line-row'));
+      if (!rows.length) return { label: '', lineIndex: null };
+      const center = lyricsView.scrollTop + lyricsView.clientHeight / 2;
+      let bestRow = null;
+      let bestDist = Infinity;
+      rows.forEach(row => {
+        const rowCenter = row.offsetTop + row.clientHeight / 2;
+        const dist = Math.abs(rowCenter - center);
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestRow = row;
+        }
+      });
+      if (!bestRow) return { label: '', lineIndex: null };
+
+      let label = '';
+      if (bestRow.dataset.section) label = bestRow.dataset.section;
+
+      if (!label) {
+        let prev = bestRow.previousElementSibling;
+        while (prev) {
+          if (prev.dataset && prev.dataset.section) {
+            label = prev.dataset.section;
+            break;
+          }
+          prev = prev.previousElementSibling;
+        }
+      }
+
+      if (!label) {
+        let next = bestRow.nextElementSibling;
+        while (next) {
+          if (next.dataset && next.dataset.section) {
+            label = next.dataset.section;
+            break;
+          }
+          next = next.nextElementSibling;
+        }
+      }
+      const lineIndex = bestRow.dataset.lineIndex != null
+        ? parseInt(bestRow.dataset.lineIndex, 10)
+        : null;
+      return { label, lineIndex };
+    }
+
+    // ===== Audio & AB =====
+    audioFileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const url = URL.createObjectURL(file);
+      audioPlayer.src = url;
+      audioPlayer.load();
+      resetAB();
+    });
+
+    function resetAB() {
+      pointA = null;
+      pointB = null;
+      abLooping = false;
+      loopBtn.classList.remove('active');
+      loopBtn.textContent = 'AB Loop: OFF';
+      abStatus.textContent = 'A: --:--  |  B: --:--';
+    }
+
+    function formatTime(sec) {
+      if (sec == null || isNaN(sec)) return '--:--';
+      const s = Math.floor(sec);
+      const m = Math.floor(s / 60);
+      const r = s % 60;
+      return m.toString().padStart(2, '0') + ':' + r.toString().padStart(2, '0');
+    }
+
+    function updateABStatus() {
+      abStatus.textContent = 'A: ' + formatTime(pointA) + '  |  B: ' + formatTime(pointB);
+    }
+
+    setABtn.addEventListener('click', () => {
+      if (!audioPlayer.duration) return;
+      pointA = audioPlayer.currentTime;
+      if (pointB != null && pointB <= pointA) {
+        pointB = null;
+      }
+      updateABStatus();
+    });
+
+    setBBtn.addEventListener('click', () => {
+      if (!audioPlayer.duration) return;
+      pointB = audioPlayer.currentTime;
+      if (pointA != null && pointB <= pointA) {
+        const tmp = pointA;
+        pointA = pointB;
+        pointB = tmp;
+      }
+      updateABStatus();
+    });
+
+    loopBtn.addEventListener('click', () => {
+      abLooping = !abLooping;
+      loopBtn.classList.toggle('active', abLooping);
+      loopBtn.textContent = abLooping ? 'AB Loop: ON' : 'AB Loop: OFF';
+    });
+
+    audioPlayer.addEventListener('timeupdate', () => {
+      if (!abLooping) return;
+      if (pointA == null || pointB == null) return;
+      if (pointB <= pointA) return;
+      if (audioPlayer.currentTime >= pointB) {
+        audioPlayer.currentTime = pointA;
+        audioPlayer.play();
+      }
+    });
+
+    // Playback speed
+    speedButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const rate = parseFloat(btn.dataset.rate);
+        if (!isNaN(rate)) {
+          audioPlayer.playbackRate = rate;
+          speedButtons.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+        }
+      });
+    });
+
+    // Save current AB + view
+    saveLoopBtn.addEventListener('click', () => {
+      if (pointA == null || pointB == null) return;
+      if (pointB <= pointA) return;
+
+      const scrollTop = lyricsView.scrollTop;
+      const meta = inferLoopMeta();
+      const loop = {
+        id: Date.now() + Math.random(),
+        a: pointA,
+        b: pointB,
+        scrollTop,
+        label: meta.label,
+        lineIndex: meta.lineIndex
+      };
+      savedLoops.push(loop);
+      renderLoops();
+    });
+
+    clearLoopsBtn.addEventListener('click', () => {
+      savedLoops = [];
+      renderLoops();
+    });
+
+    function deleteLoop(loopId) {
+      savedLoops = savedLoops.filter(l => l.id !== loopId);
+      renderLoops();
+    }
+
+    function renderLoops() {
+      loopsContainer.innerHTML = '';
+      if (!savedLoops.length) {
+        const div = document.createElement('div');
+        div.className = 'loops-empty';
+        div.textContent = 'No AB loops saved yet.';
+        loopsContainer.appendChild(div);
+        return;
+      }
+      savedLoops.forEach(loop => {
+        const item = document.createElement('div');
+        item.className = 'loop-item';
+
+        const nameRow = document.createElement('div');
+        nameRow.className = 'loop-name-row';
+
+        const name = document.createElement('div');
+        name.className = 'loop-name';
+        const baseName = loop.label && loop.label.trim()
+          ? loop.label
+          : 'Loop';
+        name.textContent = baseName;
+
+        const lineHint = document.createElement('div');
+        lineHint.className = 'loop-line-hint';
+        if (loop.lineIndex != null) {
+          lineHint.textContent = 'Line ' + (loop.lineIndex + 1);
+        } else {
+          lineHint.textContent = '';
+        }
+
+        const actions = document.createElement('div');
+        actions.className = 'loop-actions';
+
+        actions.appendChild(lineHint);
+
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.className = 'loop-delete-btn';
+        delBtn.textContent = '✕';
+        delBtn.title = 'Delete this loop';
+        delBtn.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          deleteLoop(loop.id);
+        });
+        actions.appendChild(delBtn);
+
+        nameRow.appendChild(name);
+        nameRow.appendChild(actions);
+
+        const time = document.createElement('div');
+        time.className = 'loop-time';
+        time.textContent = formatTime(loop.a) + ' - ' + formatTime(loop.b);
+
+        item.appendChild(nameRow);
+        item.appendChild(time);
+
+        item.addEventListener('click', () => {
+          pointA = loop.a;
+          pointB = loop.b;
+          updateABStatus();
+          abLooping = true;
+          loopBtn.classList.add('active');
+          loopBtn.textContent = 'AB Loop: ON';
+
+          lyricsView.scrollTop = loop.scrollTop;
+          updateHintForScroll();
+
+          audioPlayer.currentTime = pointA;
+          audioPlayer.play();
+        });
+
+        loopsContainer.appendChild(item);
+      });
+    }
+
+    // ===== Export session (JSON) =====
+    exportBtn.addEventListener('click', () => {
+      const rawLyrics = lyricsInput.value || '';
+      const fontSize = parseInt(fontSizeRange.value, 10) || 24;
+      const scrollSpeed = parseInt(scrollSpeedRange.value, 10) || 0;
+      const autoScrollEnabled = !!autoScrollToggle.checked;
+
+      const chords = [];
+      lyricsInner.querySelectorAll('.chord-slot').forEach(el => {
+        const text = el.textContent.trim();
+        if (!text) return;
+        const line = parseInt(el.dataset.line, 10);
+        const charIndex = parseInt(el.dataset.char, 10);
+        const kind = el.dataset.kind || 'char';
+        chords.push({
+          lineIndex: isNaN(line) ? null : line,
+          charIndex: isNaN(charIndex) ? null : charIndex,
+          kind,
+          chord: text
+        });
+      });
+
+      const data = {
+        version: 2,
+        rawLyrics,
+        fontSize,
+        scrollSpeed,
+        autoScrollEnabled,
+        loops: savedLoops,
+        chords,
+        ab: {
+          a: pointA,
+          b: pointB,
+          looping: abLooping
+        }
+      };
+
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'chord-lyrics-session.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    // ===== Import session (JSON) =====
+    importSessionBtn.addEventListener('click', () => {
+      sessionFileInput.value = '';
+      sessionFileInput.click();
+    });
+
+    sessionFileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const json = JSON.parse(reader.result || '{}');
+          loadSession(json);
+        } catch (err) {
+          alert('Failed to parse JSON file. Please make sure it was exported from this tool.');
+        }
+      };
+      reader.readAsText(file, 'utf-8');
+    });
+
+    function loadSession(data) {
+      if (!data || typeof data !== 'object') {
+        alert('Invalid session data.');
+        return;
+      }
+      const version = data.version || 1;
+
+      // Restore lyrics
+      const rawLyrics = data.rawLyrics || '';
+      lyricsInput.value = rawLyrics;
+      const lines = rawLyrics.split(/\n/);
+      renderLines(lines);
+      lineCountInfo.textContent = "Lines: " + lines.length;
+
+      // Restore font / scroll config
+      if (typeof data.fontSize === 'number') {
+        const fs = Math.min(
+          parseInt(fontSizeRange.max, 10),
+          Math.max(parseInt(fontSizeRange.min, 10), Math.round(data.fontSize))
+        );
+        fontSizeRange.value = String(fs);
+        fontSizeLabel.textContent = fs + 'px';
+        applyFontSize();
+      }
+
+      if (typeof data.scrollSpeed === 'number') {
+        const ss = Math.min(
+          parseInt(scrollSpeedRange.max, 10),
+          Math.max(parseInt(scrollSpeedRange.min, 10), Math.round(data.scrollSpeed))
+        );
+        scrollSpeedRange.value = String(ss);
+        scrollSpeedLabel.textContent = ss;
+      }
+
+      if (typeof data.autoScrollEnabled === 'boolean') {
+        autoScrollToggle.checked = data.autoScrollEnabled;
+        if (autoScrollToggle.checked) {
+          startAutoScroll();
+        } else {
+          stopAutoScroll();
+        }
+      }
+
+      // Restore chords
+      if (Array.isArray(data.chords)) {
+        data.chords.forEach(c => {
+          const line = c.lineIndex;
+          const charIndex = c.charIndex;
+          const kind = c.kind || 'char';
+          const text = c.chord || '';
+          if (line == null || charIndex == null || !text) return;
+          const selector = '.chord-slot[data-line="' + line + '"][data-char="' + charIndex + '"][data-kind="' + kind + '"]';
+          const el = lyricsInner.querySelector(selector);
+          if (!el) return;
+          el.textContent = text;
+          el.classList.remove('empty');
+        });
+      }
+
+      // Restore loops
+      if (Array.isArray(data.loops)) {
+        savedLoops = data.loops.map(l => ({
+          id: l.id != null ? l.id : (Date.now() + Math.random()),
+          a: l.a,
+          b: l.b,
+          scrollTop: typeof l.scrollTop === 'number' ? l.scrollTop : 0,
+          label: l.label || '',
+          lineIndex: typeof l.lineIndex === 'number' ? l.lineIndex : null
+        }));
+      } else {
+        savedLoops = [];
+      }
+      renderLoops();
+
+      // Restore AB state
+      resetAB();
+      if (data.ab && typeof data.ab === 'object') {
+        if (typeof data.ab.a === 'number') pointA = data.ab.a;
+        if (typeof data.ab.b === 'number') pointB = data.ab.b;
+        updateABStatus();
+        if (data.ab.looping) {
+          abLooping = true;
+          loopBtn.classList.add('active');
+          loopBtn.textContent = 'AB Loop: ON';
+        }
+      }
+
+      // Scroll to top by default
+      lyricsView.scrollTop = 0;
+      updateHintForScroll();
+
+      // 关掉 modal
+      closeLyricsModal();
+    }
+
+    // Init labels
+    scrollSpeedLabel.textContent = scrollSpeedRange.value;
+    fontSizeLabel.textContent = fontSizeRange.value + 'px';
+  </script>
+</body>
+</html>
